@@ -1,5 +1,3 @@
-import sys
-import os
 import pandas as pd
 
 # load raw airbnb listings data in CSV format into dataframe
