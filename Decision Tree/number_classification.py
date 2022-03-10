@@ -8,7 +8,7 @@ from sklearn.datasets import load_digits
 digits = load_digits()
 digits.keys()
 
-# split dataset to 50% for training and 50% for testing with random seet in train_set_split to 5
+# split dataset to 50% for training and 50% for testing with random seed in train_set_split to 5
 print("Splitting dataset.")
 from sklearn.model_selection import train_test_split
 Xtrain, Xtest, ytrain, ytest = train_test_split(digits.data,digits.target,test_size=0.5,train_size=0.5, random_state=5)
