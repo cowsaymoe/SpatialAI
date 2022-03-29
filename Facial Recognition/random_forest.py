@@ -40,19 +40,49 @@ X_test = scaler.transform(X_test)
 from sklearn.ensemble import RandomForestClassifier
 
 myRF = RandomForestClassifier(n_estimators=100)
-myRF.fit(X_train,y_train)
 
+
+# hyper parameter tuning
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.model_selection import GridSearchCV
+
+calibrated_forest = CalibratedClassifierCV(base_estimator=myRF)
+
+param_grid = {
+    'base_estimator__max_depth': [5, 25, 50, 80],
+}
+
+search = GridSearchCV(calibrated_forest, param_grid, cv=5)
+
+
+
+# train both models
+myRF.fit(X_train,y_train)
+search.fit(X_train, y_train)
 # check results on training data
 ypred_train = myRF.predict(X_train)
-
+ypred_train_hyper = search.predict(X_train)
 # check results on test data
 ypred = myRF.predict(X_test)
+ypred_hyper = search.predict(X_test)
+
+print("Optimized hyperparameters:")
+print(search.best_params_)
 
 # calculate accuracy of training and test results
 from sklearn.metrics import accuracy_score
 
 print('training accuracy: {:.1%}'.format(accuracy_score(y_train, ypred_train)))
 print('test accuracy: {:.1%}'.format(accuracy_score(y_test, ypred)))
+
+print('optimized training accuracy: {:.1%}'.format(accuracy_score(y_train, ypred_train_hyper)))
+print('optimized test accuracy: {:.1%}'.format(accuracy_score(y_test, ypred_hyper)))
+
+
+'''
+training accuracy: 100.0%
+test accuracy: 67.2%
+'''
 
 # build a text report showing the main classification metrics
 from sklearn.metrics import classification_report

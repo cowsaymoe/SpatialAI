@@ -1,3 +1,4 @@
+from tkinter import Grid
 import matplotlib.pyplot as plt
 import numpy as np
 #import dataset of faces
@@ -43,17 +44,42 @@ from sklearn.neighbors import KNeighborsClassifier
 neigh = KNeighborsClassifier(n_neighbors=10, p=1)
 neigh.fit(X_train,y_train)
 
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.experimental import enable_halving_search_cv
+from sklearn.model_selection import HalvingGridSearchCV
+
+
+calibrated_neigh = CalibratedClassifierCV(base_estimator=neigh)
+
+
+param_grid = {
+    'base_estimator__n_neighbors': [3, 4, 5, 6, 7, 13],
+}
+
+
+search = HalvingGridSearchCV(calibrated_neigh, param_grid)
+
+search.fit(X_train, y_train)
+
 # predict results on training data
-ypred_train = neigh.predict(X_train)
+# ypred_train = neigh.predict(X_train)
+ypred_train_hyper = search.predict(X_train)
 # predict results on test data
-ypred = neigh.predict(X_test)
+# ypred = neigh.predict(X_test)
+ypred_hyper = search.predict(X_test)
 
 
 # calculate accuracy of training and test resultsfrom sklearn
 from sklearn.metrics import mean_squared_error
 
-print("training accuracy: ", mean_squared_error(y_train, ypred_train))
-print("test accuracy: ", mean_squared_error(y_test, ypred))
+print("Optimized hyperparameters:")
+print(search.best_params_)
+
+# print("training accuracy: ", mean_squared_error(y_train, ypred_train))
+# print("test accuracy: ", mean_squared_error(y_test, ypred))
+
+print("optimized training accuracy: ", mean_squared_error(y_train, ypred_train_hyper))
+print("optimized test accuracy: ", mean_squared_error(y_test, ypred_hyper))
 
 '''
 squared_error = (ypred - y_test)**2
@@ -64,12 +90,12 @@ print(loss)
 
 # build a text report showing the main classification metrics
 from sklearn.metrics import classification_report
-print(classification_report(y_test, ypred, target_names=target_names, zero_division=0))
+print(classification_report(y_test, ypred_hyper, target_names=target_names, zero_division=0))
 
 # build confusion matrix
 from sklearn.metrics import ConfusionMatrixDisplay
 ConfusionMatrixDisplay.from_estimator(
-    neigh, X_test, y_test, display_labels=target_names, xticks_rotation="vertical"
+    search, X_test, y_test, display_labels=target_names, xticks_rotation="vertical"
 )
 
 plt.tight_layout()
@@ -88,13 +114,13 @@ def plot_gallery(images, titles, h, w, n_row=3, n_col=4):
         plt.yticks(())
 
 
-def title(y_pred, y_test, target_names, i):
-    pred_name = target_names[y_pred[i]].rsplit(' ', 1)[-1]
+def title(ypred_hyper, y_test, target_names, i):
+    pred_name = target_names[ypred_hyper[i]].rsplit(' ', 1)[-1]
     true_name = target_names[y_test[i]].rsplit(' ', 1)[-1]
     return 'predicted: %s\ntrue:      %s' % (pred_name, true_name)
 
 prediction_titles = [
-    title(ypred, y_test, target_names, i) for i in range(ypred.shape[0])
+    title(ypred_hyper, y_test, target_names, i) for i in range(ypred_hyper.shape[0])
     ]
 
 plot_gallery(X_test, prediction_titles, h, w)
